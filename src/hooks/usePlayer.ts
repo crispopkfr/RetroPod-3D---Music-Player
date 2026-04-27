@@ -81,23 +81,8 @@ export function usePlayer() {
       if (haptics && window.navigator.vibrate) {
         window.navigator.vibrate([30, 50, 30]);
       }
-    } else if (currentView === 'PLAYLISTS_VIEW') {
-        const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, false);
-        const item = menuItems[menuIndex];
-        if (item && item !== '+ Create New') {
-            const playlist = playlists.find(p => p.name === item);
-            if (playlist) {
-                setSelectedPlaylistId(playlist.id);
-                setLastViewBeforePlaylistOptions('PLAYLISTS_VIEW');
-                setCurrentView('PLAYLIST_OPTIONS_VIEW');
-                setMenuIndex(0);
-                if (haptics && window.navigator.vibrate) {
-                    window.navigator.vibrate([30, 50, 30]);
-                }
-            }
-        }
     }
-  }, [currentView, playingMode, haptics, menuIndex, playlists, sensitivity, userSongs, filter, showBatteryPercentage, shuffle, showHud]);
+  }, [currentView, playingMode, haptics]);
 
   useEffect(() => {
     if (soundRef.current) {
@@ -281,26 +266,25 @@ export function usePlayer() {
                 }
             }
         }
-    } else if (currentView === 'PLAYLIST_OPTIONS_VIEW') {
-        if (item === 'Rename') {
+    } else if (currentView === 'MANAGE_PLAYLIST_VIEW') {
+        if (item === 'Done') {
+            setCurrentView('PLAYLIST_SONGS_VIEW');
+            setMenuIndex(0);
+        } else if (item === 'Rename') {
             const newName = prompt('New Name:');
             if (newName && selectedPlaylistId) {
                 setPlaylists(prev => prev.map(p => p.id === selectedPlaylistId ? { ...p, name: newName } : p));
             }
         } else if (item === 'Delete') {
-            if (confirm('Are you sure you want to delete this playlist?')) {
-                setPlaylists(prev => prev.filter(p => p.id !== selectedPlaylistId));
-                setCurrentView('PLAYLISTS_VIEW');
-                setMenuIndex(0);
-            }
-        } else if (item === 'Done') {
+            setPlaylists(prev => prev.map(p => p.id === selectedPlaylistId ? { ...p, isDeleting: true } : p));
+            setMenuIndex(1); // Point to 'Yes'
+        } else if (item === 'Yes') {
+            setPlaylists(prev => prev.filter(p => p.id !== selectedPlaylistId));
             setCurrentView('PLAYLISTS_VIEW');
             setMenuIndex(0);
-        }
-    } else if (currentView === 'MANAGE_PLAYLIST_VIEW') {
-        if (item === 'Done') {
-            setCurrentView('PLAYLIST_SONGS_VIEW');
-            setMenuIndex(0);
+        } else if (item === 'No' || item === 'Confirm Delete?') {
+            setPlaylists(prev => prev.map(p => p.id === selectedPlaylistId ? { ...p, isDeleting: false } : p));
+            setMenuIndex(2); // Set back to 'Delete'
         } else {
              const song = userSongs.find(s => s.title === item);
              if (song && selectedPlaylistId) {
@@ -474,13 +458,15 @@ export function usePlayer() {
           const idx = playlists.findIndex(p => p.id === selectedPlaylistId);
           setMenuIndex(idx !== -1 ? idx + 1 : 0);
           setFilter({ type: 'none', value: '' });
-      } else if (currentView === 'PLAYLIST_OPTIONS_VIEW') {
-          setCurrentView('PLAYLISTS_VIEW');
-          const idx = playlists.findIndex(p => p.id === selectedPlaylistId);
-          setMenuIndex(idx !== -1 ? idx + 1 : 0);
       } else if (currentView === 'MANAGE_PLAYLIST_VIEW') {
-          setCurrentView('PLAYLIST_SONGS_VIEW');
-          setMenuIndex(0);
+          const curPlaylist = playlists.find(p => p.id === selectedPlaylistId);
+          if (curPlaylist?.isDeleting) {
+              setPlaylists(prev => prev.map(p => p.id === selectedPlaylistId ? { ...p, isDeleting: false } : p));
+              setMenuIndex(2); // Back to Delete
+          } else {
+              setCurrentView('PLAYLIST_SONGS_VIEW');
+              setMenuIndex(0);
+          }
       } else if (currentView === 'MUSIC_MENU') {
           setCurrentView('MENU');
           setMenuIndex(0);
@@ -573,13 +559,12 @@ export function getMenuItems(view: View, sensitivity: number = 1, haptics: boole
         const songs = userSongs.filter(s => playlist.songs.includes(s.id));
         return ['Manage Playlist', ...songs.map(s => s.title)];
     }
-    case 'PLAYLIST_OPTIONS_VIEW': {
-      if (isDeleting) {
-        return ['Confirm Delete?', 'Yes', 'No'];
-      }
-      return ['Rename', 'Delete', 'Done'];
+    case 'MANAGE_PLAYLIST_VIEW': {
+        if (isDeleting) {
+          return ['Confirm Delete?', 'Yes', 'No'];
+        }
+        return ['Done', 'Rename', 'Delete', ...userSongs.map(s => s.title)];
     }
-    case 'MANAGE_PLAYLIST_VIEW': return ['Done', ...userSongs.map(s => s.title)];
     case 'ARTISTS_VIEW': return Array.from(new Set(userSongs.map(s => s.artist))).sort((a, b) => a.localeCompare(b));
     case 'ALBUMS_VIEW': return Array.from(new Set(userSongs.map(s => s.album))).sort((a, b) => a.localeCompare(b));
     case 'SETTINGS': return [
