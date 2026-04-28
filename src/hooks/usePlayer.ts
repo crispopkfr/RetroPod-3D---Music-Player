@@ -52,6 +52,7 @@ export function usePlayer() {
     const [outerRingColor, setOuterRingColor] = useState('#e8e8e8'); // Default light grey
     const [wheelIconsColor, setWheelIconsColor] = useState('#808080'); // Default grey
   const [stickers, setStickers] = useState<(string | null)[]>(new Array(4).fill(null));
+
   const [sensitivity, setSensitivity] = useState(0.5);
   const [haptics, setHaptics] = useState(true);
   const [shuffle, setShuffle] = useState(false);
@@ -67,6 +68,68 @@ export function usePlayer() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
   const [lastViewBeforePlaylistOptions, setLastViewBeforePlaylistOptions] = useState<View | null>(null);
+
+  const exportData = useCallback(() => {
+    const data = {
+      deviceColor,
+      wheelColor,
+      centerButtonColor,
+      outerRingColor,
+      wheelIconsColor,
+      stickers,
+      sensitivity,
+      haptics,
+      shuffle,
+      showHud,
+      displayMode,
+      showBatteryPercentage,
+      playlists
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `retropod-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, sensitivity, haptics, shuffle, showHud, displayMode, showBatteryPercentage, playlists]);
+
+  const importData = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          try {
+            const data = JSON.parse(re.target?.result as string);
+            if (data.deviceColor) setDeviceColor(data.deviceColor);
+            if (data.wheelColor) setWheelColor(data.wheelColor);
+            if (data.centerButtonColor) setCenterButtonColor(data.centerButtonColor);
+            if (data.outerRingColor) setOuterRingColor(data.outerRingColor);
+            if (data.wheelIconsColor) setWheelIconsColor(data.wheelIconsColor);
+            if (data.stickers) setStickers(data.stickers);
+            if (data.sensitivity) setSensitivity(data.sensitivity);
+            if (data.haptics !== undefined) setHaptics(data.haptics);
+            if (data.shuffle !== undefined) setShuffle(data.shuffle);
+            if (data.showHud !== undefined) setShowHud(data.showHud);
+            if (data.displayMode) setDisplayMode(data.displayMode);
+            if (data.showBatteryPercentage !== undefined) setShowBatteryPercentage(data.showBatteryPercentage);
+            if (data.playlists) setPlaylists(data.playlists);
+            alert('Settings imported successfully!');
+          } catch (err) {
+            alert('Failed to import settings. Invalid file format.');
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  }, []);
 
   const soundRef = useRef<Howl | null>(null);
   const currentSong = userSongs[currentSongIndex] || SONGLIST[0];
@@ -351,6 +414,10 @@ export function usePlayer() {
       } else if (item === 'Customize') {
           setCurrentView('THEME_SETTINGS');
           setMenuIndex(0);
+      } else if (item === 'Export') {
+          exportData();
+      } else if (item === 'Import') {
+          importData();
       } else if (item.startsWith('Sensitivity')) {
           setSensitivity(prev => (prev >= 3 ? 0.5 : prev + 0.5));
       } else if (item.startsWith('Shuffle')) {
@@ -648,6 +715,8 @@ export function getMenuItems(view: View, sensitivity: number = 1, haptics: boole
     case 'SETTINGS': return [
       'Source Folder', 
       'Customize', 
+      'Export',
+      'Import',
       `Sensitivity: x${sensitivity}`, 
       `Shuffle: ${shuffle ? 'On' : 'Off'}`,
       `Hud: ${showHud ? 'On' : 'Off'}`
