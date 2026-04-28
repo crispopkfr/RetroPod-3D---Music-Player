@@ -308,6 +308,7 @@ function IpodModel({ player }: { player: any }) {
               fontType={player.fontType}
               fontColor={player.fontColor}
               selectorColor={player.selectorColor}
+              isSoundEnabled={player.isSoundEnabled}
             />
           </div>
         </Html>

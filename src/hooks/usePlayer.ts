@@ -54,6 +54,7 @@ export function usePlayer() {
     const [fontColor, setFontColor] = useState('#000000'); // Default black
     const [selectorColor, setSelectorColor] = useState('#000000'); // Default black
     const [voidColor, setVoidColor] = useState('#000000'); // Default black
+    const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [stickers, setStickers] = useState<(string | null)[]>(new Array(4).fill(null));
   const [zoom, setZoom] = useState(10.4);
   const [fontType, setFontType] = useState<'Classic' | 'Pixel'>('Classic');
@@ -67,6 +68,28 @@ export function usePlayer() {
     const [showBatteryPercentage, setShowBatteryPercentage] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+
+  const initialSettings = useRef({
+      deviceColor,
+      wheelColor,
+      centerButtonColor,
+      outerRingColor,
+      wheelIconsColor,
+      fontColor,
+      selectorColor,
+      voidColor,
+      isSoundEnabled,
+      stickers: [...stickers],
+      zoom,
+      fontType,
+      sensitivity,
+      haptics,
+      shuffle,
+      showHud,
+      displayMode,
+      showBatteryPercentage,
+  });
+
   const [filter, setFilter] = useState<{ type: 'artist' | 'album' | 'none' | 'playlist', value: string, source?: View }>({ type: 'none', value: '', source: undefined });
   const [playingMode, setPlayingMode] = useState<PlayingMode>('PROGRESS');
   const [isRatingEditing, setIsRatingEditing] = useState(false);
@@ -93,7 +116,8 @@ export function usePlayer() {
       fontType,
       fontColor,
       selectorColor,
-      voidColor
+      voidColor,
+      isSoundEnabled
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -141,6 +165,7 @@ export function usePlayer() {
             if (data.fontColor) setFontColor(data.fontColor);
             if (data.selectorColor) setSelectorColor(data.selectorColor);
             if (data.voidColor) setVoidColor(data.voidColor);
+            if (data.isSoundEnabled !== undefined) setIsSoundEnabled(!!data.isSoundEnabled);
             
             alert('Settings imported successfully!');
           } catch (err) {
@@ -155,6 +180,28 @@ export function usePlayer() {
   }, []);
 
   const soundRef = useRef<Howl | null>(null);
+  const clickSound = useRef<Howl | null>(null);
+  const tickSound = useRef<Howl | null>(null);
+  const buttonSound = useRef<Howl | null>(null);
+
+  useEffect(() => {
+    if (!clickSound.current) {
+        clickSound.current = new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'], volume: 0.3 });
+    }
+    if (!tickSound.current) {
+        tickSound.current = new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'], volume: 0.1, rate: 2.0 });
+    }
+    if (!buttonSound.current) {
+        buttonSound.current = new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3'], volume: 0.3 });
+    }
+
+    return () => {
+      clickSound.current?.unload();
+      tickSound.current?.unload();
+      buttonSound.current?.unload();
+    };
+  }, []);
+
   const currentSong = userSongs[currentSongIndex] || SONGLIST[0];
 
   const updateSongMetadata = (updatedSong: Song) => {
@@ -252,7 +299,7 @@ export function usePlayer() {
 
     const curPlaylist = playlists.find(p => p.id === filter.value);
     const isDeleting = curPlaylist?.isDeleting || false;
-    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor);
+    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled);
     if (menuItems.length === 0) return;
 
     setMenuIndex((prev) => {
@@ -275,9 +322,11 @@ export function usePlayer() {
     if (haptics && window.navigator.vibrate) {
         window.navigator.vibrate(5);
     }
-  }, [currentView, sensitivity, haptics, duration, playingMode, currentSong, updateSongRating, playlists, userSongs, filter, showBatteryPercentage, shuffle, showHud, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor]);
+    if (isSoundEnabled) tickSound.current?.play();
+  }, [currentView, sensitivity, haptics, duration, playingMode, currentSong, updateSongRating, playlists, userSongs, filter, showBatteryPercentage, shuffle, showHud, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled]);
 
   const selectItem = useCallback(() => {
+    if (isSoundEnabled) clickSound.current?.play();
     if (haptics && window.navigator.vibrate) {
       window.navigator.vibrate(20);
     }
@@ -294,7 +343,7 @@ export function usePlayer() {
 
     const curPlaylist = playlists.find(p => p.id === filter.value);
     const isDeleting = curPlaylist?.isDeleting || false;
-    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor);
+    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled);
     const item = menuItems[menuIndex];
 
     if (currentView === 'MENU') {
@@ -438,16 +487,14 @@ export function usePlayer() {
       } else if (item === 'Customize') {
           setCurrentView('THEME_SETTINGS');
           setMenuIndex(0);
-      } else if (item === 'Export') {
-          exportData();
-      } else if (item === 'Import') {
-          importData();
       } else if (item.startsWith('Sensitivity')) {
           setSensitivity(prev => (prev >= 3 ? 0.5 : prev + 0.5));
       } else if (item.startsWith('Shuffle')) {
           setShuffle(prev => !prev);
       } else if (item.startsWith('Hud')) {
           setShowHud(prev => !prev);
+      } else if (item.startsWith('Sound')) {
+          setIsSoundEnabled(prev => !prev);
       }
     } else if (currentView === 'THEME_SETTINGS') {
         if (item.startsWith('Display Mode')) {
@@ -456,6 +503,10 @@ export function usePlayer() {
               if (prev === 'Dark') return 'Retro';
               return 'Light';
           });
+        } else if (item === 'Export') {
+            exportData();
+        } else if (item === 'Import') {
+            importData();
         } else if (item.startsWith('Selector Color')) {
             setCurrentView('SELECTOR_COLOR_SETTINGS');
             setMenuIndex(0);
@@ -485,6 +536,28 @@ export function usePlayer() {
             setMenuIndex(0);
         } else if (item.startsWith('Battery Percentage')) {
           setShowBatteryPercentage(prev => !prev);
+        } else if (item === 'Reset') {
+           if (confirm('Reset all customizations to default?')) {
+               const s = initialSettings.current;
+               setDisplayMode(s.displayMode);
+               setSelectorColor(s.selectorColor);
+               setFontType(s.fontType);
+               setFontColor(s.fontColor);
+               setDeviceColor(s.deviceColor);
+               setWheelColor(s.wheelColor);
+               setOuterRingColor(s.outerRingColor);
+               setCenterButtonColor(s.centerButtonColor);
+               setWheelIconsColor(s.wheelIconsColor);
+               setStickers([...s.stickers]);
+               setShowBatteryPercentage(s.showBatteryPercentage);
+               setZoom(s.zoom);
+               setVoidColor(s.voidColor);
+               setIsSoundEnabled(s.isSoundEnabled);
+               setSensitivity(s.sensitivity);
+               setHaptics(s.haptics);
+               setShuffle(s.shuffle);
+               setShowHud(s.showHud);
+           }
         }
     } else if (currentView === 'DEVICE_COLOR_SETTINGS') {
         setDeviceColor(item);
@@ -503,44 +576,51 @@ export function usePlayer() {
     } else if (currentView === 'SELECTOR_COLOR_SETTINGS') {
         setSelectorColor(item);
     } else if (currentView === 'STICKER_SETTINGS') {
-        if (item === 'Done') {
-            setCurrentView('THEME_SETTINGS');
-            setMenuIndex(6); // Stickers index
-        } else if (item.startsWith('Slot')) {
-            const slotIdx = parseInt(item.split(' ')[1]) - 1;
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/png';
-            input.onchange = (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (re) => {
-                        const dataUrl = re.target?.result as string;
-                        setStickers(prev => {
-                            const next = [...prev];
-                            next[slotIdx] = dataUrl;
-                            return next;
-                        });
-                    };
-                    reader.readAsDataURL(file);
-                }
-            };
-            input.click();
+        const slotIdx = parseInt(item.split(' ')[1]) - 1;
+        if (stickers[slotIdx]) {
+            // Remove existing sticker
+            setStickers(prev => {
+                const next = [...prev];
+                next[slotIdx] = null;
+                return next;
+            });
+            return;
         }
+        
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/png';
+        input.onchange = (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (re) => {
+                    const dataUrl = re.target?.result as string;
+                    setStickers(prev => {
+                        const next = [...prev];
+                        next[slotIdx] = dataUrl;
+                        return next;
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        input.click();
     }
-  }, [currentView, menuIndex, haptics, isPlaying, userSongs, filter, showBatteryPercentage, playlists, sensitivity, selectedPlaylistId, updateSongMetadata, shuffle, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor]);
+  }, [currentView, menuIndex, haptics, isPlaying, userSongs, filter, showBatteryPercentage, playlists, sensitivity, selectedPlaylistId, updateSongMetadata, shuffle, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled]);
 
   const togglePlay = useCallback(() => {
+    if (isSoundEnabled) buttonSound.current?.play();
     setIsPlaying(prev => !prev);
     if (isPlaying) {
       soundRef.current?.pause();
     } else {
       soundRef.current?.play();
     }
-  }, [isPlaying]);
+  }, [isPlaying, isSoundEnabled]);
 
   const nextSong = useCallback(() => {
+     if (isSoundEnabled) buttonSound.current?.play();
      const songs = filter.type === 'artist' ? userSongs.filter(s => s.artist === filter.value)
                  : filter.type === 'album' ? userSongs.filter(s => s.album === filter.value)
                  : filter.type === 'playlist' ? userSongs.filter(s => {
@@ -566,9 +646,10 @@ export function usePlayer() {
      const globalIdx = userSongs.findIndex(s => s.id === nextSongObj.id);
      setCurrentSongIndex(globalIdx !== -1 ? globalIdx : 0);
      setIsPlaying(true);
-  }, [userSongs, filter, playlists, shuffle, currentSong.id]);
+  }, [userSongs, filter, playlists, shuffle, currentSong.id, isSoundEnabled]);
 
   const prevSong = useCallback(() => {
+     if (isSoundEnabled) buttonSound.current?.play();
      const songs = filter.type === 'artist' ? userSongs.filter(s => s.artist === filter.value)
                  : filter.type === 'album' ? userSongs.filter(s => s.album === filter.value)
                  : filter.type === 'playlist' ? userSongs.filter(s => {
@@ -585,9 +666,10 @@ export function usePlayer() {
      const globalIdx = userSongs.findIndex(s => s.id === prevSongObj.id);
      setCurrentSongIndex(globalIdx !== -1 ? globalIdx : 0);
      setIsPlaying(true);
-  }, [userSongs, filter, playlists, currentSong.id]);
+  }, [userSongs, filter, playlists, currentSong.id, isSoundEnabled]);
 
   const goMenu = useCallback(() => {
+      if (isSoundEnabled) buttonSound.current?.play();
       if (currentView === 'NOW_PLAYING') {
           const songs = filter.type === 'artist' ? userSongs.filter(s => s.artist === filter.value)
                       : filter.type === 'album' ? userSongs.filter(s => s.album === filter.value)
@@ -663,7 +745,7 @@ export function usePlayer() {
           setCurrentView('MENU');
           setMenuIndex(0);
       }
-  }, [currentView, currentSongIndex]);
+  }, [currentView, currentSongIndex, isSoundEnabled]);
 
   return {
     currentView,
@@ -702,6 +784,8 @@ export function usePlayer() {
     setSelectorColor,
     voidColor,
     setVoidColor,
+    isSoundEnabled,
+    setIsSoundEnabled,
     userSongs,
     setUserSongs,
     filter,
@@ -739,7 +823,7 @@ export const COLOR_MAP: Record<string, string> = {
 
 export const COLORS = Object.keys(COLOR_MAP);
 
-export function getMenuItems(view: View, sensitivity: number = 1, haptics: boolean = true, userSongs: Song[] = [], filter: any = { type: 'none' }, showBatteryPercentage: boolean = false, playlists: Playlist[] = [], shuffle: boolean = false, showHud: boolean = false, isDeleting: boolean = false, displayMode: string = 'Light', deviceColor: string = '#e5e7eb', wheelColor: string = '#ffffff', centerButtonColor: string = '#ffffff', outerRingColor: string = '#e8e8e8', wheelIconsColor: string = '#808080', stickers: (string | null)[] = [], fontType: string = 'Classic', fontColor: string = '#000000', selectorColor: string = '#000000'): string[] {
+export function getMenuItems(view: View, sensitivity: number = 1, haptics: boolean = true, userSongs: Song[] = [], filter: any = { type: 'none' }, showBatteryPercentage: boolean = false, playlists: Playlist[] = [], shuffle: boolean = false, showHud: boolean = false, isDeleting: boolean = false, displayMode: string = 'Light', deviceColor: string = '#e5e7eb', wheelColor: string = '#ffffff', centerButtonColor: string = '#ffffff', outerRingColor: string = '#e8e8e8', wheelIconsColor: string = '#808080', stickers: (string | null)[] = [], fontType: string = 'Classic', fontColor: string = '#000000', selectorColor: string = '#000000', isSoundEnabled: boolean = true): string[] {
   switch (view) {
     case 'MENU': return ['Music', 'Settings'];
     case 'MUSIC_MENU': return ['Now Playing', 'Artists', 'Cover Flow', 'Albums', 'Songs', 'Playlists'];
@@ -767,11 +851,10 @@ export function getMenuItems(view: View, sensitivity: number = 1, haptics: boole
     case 'SETTINGS': return [
       'Source Folder', 
       'Customize', 
-      'Export',
-      'Import',
       `Sensitivity: x${sensitivity}`, 
       `Shuffle: ${shuffle ? 'On' : 'Off'}`,
-      `Hud: ${showHud ? 'On' : 'Off'}`
+      `Hud: ${showHud ? 'On' : 'Off'}`,
+      `Sound: ${isSoundEnabled ? 'On' : 'Off'}`
     ];
     case 'THEME_SETTINGS': return [
       `Display Mode: ${displayMode}`,
@@ -784,7 +867,10 @@ export function getMenuItems(view: View, sensitivity: number = 1, haptics: boole
       `Center Button Color: ${COLOR_MAP[centerButtonColor] || 'Custom'}`,
       `Wheel Icons Color: ${COLOR_MAP[wheelIconsColor] || 'Custom'}`,
       `Stickers (Beta): ${stickers.filter(s => s !== null).length}/4`,
-      `Battery Percentage: ${showBatteryPercentage ? 'On' : 'Off'}`
+      `Battery Percentage: ${showBatteryPercentage ? 'On' : 'Off'}`,
+      'Export',
+      'Import',
+      'Reset'
     ];
     case 'DEVICE_COLOR_SETTINGS': return COLORS;
     case 'WHEEL_COLOR_SETTINGS': return COLORS;
@@ -794,7 +880,7 @@ export function getMenuItems(view: View, sensitivity: number = 1, haptics: boole
     case 'FONT_SETTINGS': return ['Classic', 'Pixel'];
     case 'FONT_COLOR_SETTINGS': return COLORS;
     case 'SELECTOR_COLOR_SETTINGS': return COLORS;
-    case 'STICKER_SETTINGS': return ['Slot 1', 'Slot 2', 'Slot 3', 'Slot 4', 'Done'];
+    case 'STICKER_SETTINGS': return ['Slot 1', 'Slot 2', 'Slot 3', 'Slot 4'];
     case 'COVER_FLOW': {
       return Array.from(new Set(userSongs.map(s => s.album))).sort((a, b) => a.localeCompare(b));
     }

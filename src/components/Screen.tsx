@@ -38,6 +38,7 @@ interface ScreenProps {
   fontType: 'Classic' | 'Pixel';
   fontColor: string;
   selectorColor: string;
+  isSoundEnabled: boolean;
 }
 
 const RetroEqualizer: React.FC<{ isPlaying: boolean, theme: any }> = ({ isPlaying, theme }) => {
@@ -98,11 +99,12 @@ export const Screen: React.FC<ScreenProps> = ({
   stickers,
   fontType,
   fontColor,
-  selectorColor
+  selectorColor,
+  isSoundEnabled
 }) => {
   const curPlaylist = playlists.find(p => p.id === filter.value);
   const isDeleting = curPlaylist?.isDeleting || false;
-  const menuItems = getMenuItems(view, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor);
+  const menuItems = getMenuItems(view, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled);
   const [batteryLevel, setBatteryLevel] = React.useState(100);
 
   const getContrastColor = (hexColor: string) => {
