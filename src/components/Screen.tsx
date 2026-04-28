@@ -31,6 +31,8 @@ interface ScreenProps {
   displayMode: 'Light' | 'Dark' | 'Retro';
   deviceColor: string;
   wheelColor: string;
+  outerRingColor: string;
+  wheelIconsColor: string;
   centerButtonColor: string;
   stickers: (string | null)[];
 }
@@ -87,12 +89,14 @@ export const Screen: React.FC<ScreenProps> = ({
   displayMode,
   deviceColor,
   wheelColor,
+  outerRingColor,
+  wheelIconsColor,
   centerButtonColor,
   stickers
 }) => {
   const curPlaylist = playlists.find(p => p.id === filter.value);
   const isDeleting = curPlaylist?.isDeleting || false;
-  const menuItems = getMenuItems(view, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor);
+  const menuItems = getMenuItems(view, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers);
   const [batteryLevel, setBatteryLevel] = React.useState(100);
 
   const theme = {
@@ -264,9 +268,11 @@ export const Screen: React.FC<ScreenProps> = ({
               <div className={cn("px-3 py-1 text-[12px] font-black uppercase tracking-widest", theme.titleBar)}>
                 {view === 'MENU' ? 'MENU' : 
                  view === 'THEME_SETTINGS' ? 'Customize' :
-                 view === 'DEVICE_COLOR_SETTINGS' ? 'Device Color' :
+                 view === 'DEVICE_COLOR_SETTINGS' ? 'Body Color' :
                  view === 'WHEEL_COLOR_SETTINGS' ? 'Wheel Color' :
-                 view === 'CENTER_BUTTON_COLOR_SETTINGS' ? 'Center Button' :
+                 view === 'OUTER_RING_COLOR_SETTINGS' ? 'Outer Ring Color' :
+                 view === 'CENTER_BUTTON_COLOR_SETTINGS' ? 'Center Button Color' :
+                 view === 'WHEEL_ICONS_COLOR_SETTINGS' ? 'Wheel Icons Color' :
                  view === 'STICKER_SETTINGS' ? 'Stickers' :
                  view === 'MUSIC_MENU' ? 'Music' :
                  view === 'COVER_FLOW' ? 'Cover Flow' :
@@ -328,7 +334,7 @@ export const Screen: React.FC<ScreenProps> = ({
                         )}
                       >
                         <div className="flex items-center gap-2 truncate flex-1 pr-2">
-                            {(view === 'DEVICE_COLOR_SETTINGS' || view === 'WHEEL_COLOR_SETTINGS' || view === 'CENTER_BUTTON_COLOR_SETTINGS') && (
+                            {(view === 'DEVICE_COLOR_SETTINGS' || view === 'WHEEL_COLOR_SETTINGS' || view === 'OUTER_RING_COLOR_SETTINGS' || view === 'CENTER_BUTTON_COLOR_SETTINGS' || view === 'WHEEL_ICONS_COLOR_SETTINGS') && (
                                 <div 
                                     className={cn("w-3 h-3 flex-shrink-0 border", theme.border)}
                                     style={{ backgroundColor: item }} 

@@ -49,6 +49,8 @@ export function usePlayer() {
     const [deviceColor, setDeviceColor] = useState('#e5e7eb'); // Classic Grey
     const [wheelColor, setWheelColor] = useState('#ffffff'); // White
     const [centerButtonColor, setCenterButtonColor] = useState('#ffffff');
+    const [outerRingColor, setOuterRingColor] = useState('#e8e8e8'); // Default light grey
+    const [wheelIconsColor, setWheelIconsColor] = useState('#808080'); // Default grey
   const [stickers, setStickers] = useState<(string | null)[]>(new Array(4).fill(null));
   const [sensitivity, setSensitivity] = useState(0.5);
   const [haptics, setHaptics] = useState(true);
@@ -163,7 +165,7 @@ export function usePlayer() {
 
     const curPlaylist = playlists.find(p => p.id === filter.value);
     const isDeleting = curPlaylist?.isDeleting || false;
-    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor);
+    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers);
     if (menuItems.length === 0) return;
 
     setMenuIndex((prev) => {
@@ -205,7 +207,7 @@ export function usePlayer() {
 
     const curPlaylist = playlists.find(p => p.id === filter.value);
     const isDeleting = curPlaylist?.isDeleting || false;
-    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor);
+    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers);
     const item = menuItems[menuIndex];
 
     if (currentView === 'MENU') {
@@ -363,16 +365,22 @@ export function usePlayer() {
               if (prev === 'Dark') return 'Retro';
               return 'Light';
           });
-        } else if (item.startsWith('Device Color')) {
+        } else if (item.startsWith('Body Color')) {
             setCurrentView('DEVICE_COLOR_SETTINGS');
             setMenuIndex(0);
         } else if (item.startsWith('Wheel Color')) {
             setCurrentView('WHEEL_COLOR_SETTINGS');
             setMenuIndex(0);
-        } else if (item.startsWith('Center Button')) {
+        } else if (item.startsWith('Outer Ring Color')) {
+            setCurrentView('OUTER_RING_COLOR_SETTINGS');
+            setMenuIndex(0);
+        } else if (item.startsWith('Center Button Color')) {
             setCurrentView('CENTER_BUTTON_COLOR_SETTINGS');
             setMenuIndex(0);
-        } else if (item === 'Stickers') {
+        } else if (item.startsWith('Wheel Icons Color')) {
+            setCurrentView('WHEEL_ICONS_COLOR_SETTINGS');
+            setMenuIndex(0);
+        } else if (item.startsWith('Stickers')) {
             setCurrentView('STICKER_SETTINGS');
             setMenuIndex(0);
         } else if (item.startsWith('Battery Percentage')) {
@@ -382,12 +390,16 @@ export function usePlayer() {
         setDeviceColor(item);
     } else if (currentView === 'WHEEL_COLOR_SETTINGS') {
         setWheelColor(item);
+    } else if (currentView === 'OUTER_RING_COLOR_SETTINGS') {
+        setOuterRingColor(item);
     } else if (currentView === 'CENTER_BUTTON_COLOR_SETTINGS') {
         setCenterButtonColor(item);
+    } else if (currentView === 'WHEEL_ICONS_COLOR_SETTINGS') {
+        setWheelIconsColor(item);
     } else if (currentView === 'STICKER_SETTINGS') {
         if (item === 'Done') {
             setCurrentView('THEME_SETTINGS');
-            setMenuIndex(4); // Stickers index
+            setMenuIndex(6); // Stickers index
         } else if (item.startsWith('Slot')) {
             const slotIdx = parseInt(item.split(' ')[1]) - 1;
             const input = document.createElement('input');
@@ -527,12 +539,14 @@ export function usePlayer() {
       } else if (currentView === 'THEME_SETTINGS') {
           setCurrentView('SETTINGS');
           setMenuIndex(1); // Customize
-      } else if (currentView === 'DEVICE_COLOR_SETTINGS' || currentView === 'WHEEL_COLOR_SETTINGS' || currentView === 'CENTER_BUTTON_COLOR_SETTINGS' || currentView === 'STICKER_SETTINGS') {
+      } else if (currentView === 'DEVICE_COLOR_SETTINGS' || currentView === 'WHEEL_COLOR_SETTINGS' || currentView === 'OUTER_RING_COLOR_SETTINGS' || currentView === 'CENTER_BUTTON_COLOR_SETTINGS' || currentView === 'WHEEL_ICONS_COLOR_SETTINGS' || currentView === 'STICKER_SETTINGS') {
           setCurrentView('THEME_SETTINGS');
           if (currentView === 'DEVICE_COLOR_SETTINGS') setMenuIndex(1);
           else if (currentView === 'WHEEL_COLOR_SETTINGS') setMenuIndex(2);
-          else if (currentView === 'CENTER_BUTTON_COLOR_SETTINGS') setMenuIndex(3);
-          else setMenuIndex(4); // Stickers
+          else if (currentView === 'OUTER_RING_COLOR_SETTINGS') setMenuIndex(3);
+          else if (currentView === 'CENTER_BUTTON_COLOR_SETTINGS') setMenuIndex(4);
+          else if (currentView === 'WHEEL_ICONS_COLOR_SETTINGS') setMenuIndex(5);
+          else setMenuIndex(6); // Stickers
       } else if (currentView === 'SETTINGS') {
           setCurrentView('MENU');
           setMenuIndex(1); // Settings
@@ -567,6 +581,8 @@ export function usePlayer() {
     deviceColor,
     wheelColor,
     centerButtonColor,
+    outerRingColor,
+    wheelIconsColor,
     stickers,
     setStickers,
     userSongs,
@@ -604,7 +620,7 @@ export const COLOR_MAP: Record<string, string> = {
 
 export const COLORS = Object.keys(COLOR_MAP);
 
-export function getMenuItems(view: View, sensitivity: number = 1, haptics: boolean = true, userSongs: Song[] = [], filter: any = { type: 'none' }, showBatteryPercentage: boolean = false, playlists: Playlist[] = [], shuffle: boolean = false, showHud: boolean = false, isDeleting: boolean = false, displayMode: string = 'Light', deviceColor: string = '#e5e7eb', wheelColor: string = '#ffffff', centerButtonColor: string = '#ffffff'): string[] {
+export function getMenuItems(view: View, sensitivity: number = 1, haptics: boolean = true, userSongs: Song[] = [], filter: any = { type: 'none' }, showBatteryPercentage: boolean = false, playlists: Playlist[] = [], shuffle: boolean = false, showHud: boolean = false, isDeleting: boolean = false, displayMode: string = 'Light', deviceColor: string = '#e5e7eb', wheelColor: string = '#ffffff', centerButtonColor: string = '#ffffff', outerRingColor: string = '#e8e8e8', wheelIconsColor: string = '#808080', stickers: (string | null)[] = []): string[] {
   switch (view) {
     case 'MENU': return ['Music', 'Settings'];
     case 'MUSIC_MENU': return ['Now Playing', 'Artists', 'Cover Flow', 'Albums', 'Songs', 'Playlists'];
@@ -638,15 +654,19 @@ export function getMenuItems(view: View, sensitivity: number = 1, haptics: boole
     ];
     case 'THEME_SETTINGS': return [
       `Display Mode: ${displayMode}`,
-      `Device Color: ${COLOR_MAP[deviceColor] || 'Custom'}`, 
+      `Body Color: ${COLOR_MAP[deviceColor] || 'Custom'}`, 
       `Wheel Color: ${COLOR_MAP[wheelColor] || 'Custom'}`, 
-      `Center Button: ${COLOR_MAP[centerButtonColor] || 'Custom'}`,
-      'Stickers',
+      `Outer Ring Color: ${COLOR_MAP[outerRingColor] || 'Custom'}`,
+      `Center Button Color: ${COLOR_MAP[centerButtonColor] || 'Custom'}`,
+      `Wheel Icons Color: ${COLOR_MAP[wheelIconsColor] || 'Custom'}`,
+      `Stickers: ${stickers.filter(s => s !== null).length}/4`,
       `Battery Percentage: ${showBatteryPercentage ? 'On' : 'Off'}`
     ];
     case 'DEVICE_COLOR_SETTINGS': return COLORS;
     case 'WHEEL_COLOR_SETTINGS': return COLORS;
+    case 'OUTER_RING_COLOR_SETTINGS': return COLORS;
     case 'CENTER_BUTTON_COLOR_SETTINGS': return COLORS;
+    case 'WHEEL_ICONS_COLOR_SETTINGS': return COLORS;
     case 'STICKER_SETTINGS': return ['Slot 1', 'Slot 2', 'Slot 3', 'Slot 4', 'Done'];
     case 'COVER_FLOW': {
       return Array.from(new Set(userSongs.map(s => s.album))).sort((a, b) => a.localeCompare(b));

@@ -233,6 +233,8 @@ function IpodModel({ player }: { player: any }) {
               deviceColor={player.deviceColor}
               wheelColor={player.wheelColor}
               centerButtonColor={player.centerButtonColor}
+              outerRingColor={player.outerRingColor}
+              wheelIconsColor={player.wheelIconsColor}
               stickers={player.stickers}
             />
           </div>
@@ -363,7 +365,7 @@ function ClickWheelComponent({ player }: { player: any }) {
             <mesh position={[0, 0, -0.01]}>
                 <circleGeometry args={[1.2, 64]} />
                 <meshPhysicalMaterial 
-                    color="#e8e8e8" 
+                    color={player.outerRingColor} 
                     roughness={0.6} 
                     metalness={0}
                 />
@@ -385,9 +387,12 @@ function ClickWheelComponent({ player }: { player: any }) {
                 />
             </mesh>
 
-            {/* Retro Labels - Positioned on Outer Disk */}
-            <Html transform distanceFactor={4.5} pointerEvents="none" position={[0, 0, 0.05]}>
-                 <div className="w-[180px] h-[180px] rounded-full relative flex items-center justify-center text-gray-500 font-black select-none">
+        <group position={[0, 0, 0.05]}>
+            <Html transform distanceFactor={4.5} pointerEvents="none">
+                 <div 
+                    className="w-[180px] h-[180px] rounded-full relative flex items-center justify-center font-black select-none"
+                    style={{ color: player.wheelIconsColor }}
+                 >
                     {/* Menu Text */}
                     <div className="absolute top-[8px] text-[12px] tracking-[0.2em] opacity-80 uppercase">
                         MENU
@@ -421,6 +426,7 @@ function ClickWheelComponent({ player }: { player: any }) {
                     </div>
                  </div>
             </Html>
+        </group>
 
             {/* Center Button - Deep Glossy Plastic */}
             <mesh 
