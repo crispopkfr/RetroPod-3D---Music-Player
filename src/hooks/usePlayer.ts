@@ -104,7 +104,7 @@ export function usePlayer() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, sensitivity, haptics, shuffle, showHud, displayMode, showBatteryPercentage, playlists, zoom, fontType, fontColor, selectorColor]);
+  }, [deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, sensitivity, haptics, shuffle, showHud, displayMode, showBatteryPercentage, playlists, zoom, fontType, fontColor, selectorColor, voidColor]);
 
   const importData = useCallback(() => {
     const input = document.createElement('input');
@@ -117,26 +117,34 @@ export function usePlayer() {
         reader.onload = (re) => {
           try {
             const data = JSON.parse(re.target?.result as string);
+            
+            // Apply zoom with safety range to prevent disappearing device
+            if (data.zoom !== undefined && typeof data.zoom === 'number') {
+                const safeZoom = Math.max(5, Math.min(25, data.zoom));
+                setZoom(safeZoom);
+            }
+
             if (data.deviceColor) setDeviceColor(data.deviceColor);
             if (data.wheelColor) setWheelColor(data.wheelColor);
             if (data.centerButtonColor) setCenterButtonColor(data.centerButtonColor);
             if (data.outerRingColor) setOuterRingColor(data.outerRingColor);
             if (data.wheelIconsColor) setWheelIconsColor(data.wheelIconsColor);
-            if (data.stickers) setStickers(data.stickers);
+            if (data.stickers && Array.isArray(data.stickers)) setStickers(data.stickers);
             if (data.sensitivity) setSensitivity(data.sensitivity);
-            if (data.haptics !== undefined) setHaptics(data.haptics);
-            if (data.shuffle !== undefined) setShuffle(data.shuffle);
-            if (data.showHud !== undefined) setShowHud(data.showHud);
+            if (data.haptics !== undefined) setHaptics(!!data.haptics);
+            if (data.shuffle !== undefined) setShuffle(!!data.shuffle);
+            if (data.showHud !== undefined) setShowHud(!!data.showHud);
             if (data.displayMode) setDisplayMode(data.displayMode);
-            if (data.showBatteryPercentage !== undefined) setShowBatteryPercentage(data.showBatteryPercentage);
-            if (data.playlists) setPlaylists(data.playlists);
-            if (data.zoom) setZoom(data.zoom);
+            if (data.showBatteryPercentage !== undefined) setShowBatteryPercentage(!!data.showBatteryPercentage);
+            if (data.playlists && Array.isArray(data.playlists)) setPlaylists(data.playlists);
             if (data.fontType) setFontType(data.fontType);
             if (data.fontColor) setFontColor(data.fontColor);
             if (data.selectorColor) setSelectorColor(data.selectorColor);
             if (data.voidColor) setVoidColor(data.voidColor);
+            
             alert('Settings imported successfully!');
           } catch (err) {
+            console.error('Import Error:', err);
             alert('Failed to import settings. Invalid file format.');
           }
         };
@@ -213,12 +221,6 @@ export function usePlayer() {
                 soundRef.current.seek(newPos);
                 setProgress(newPos);
             }
-        } else if (playingMode === 'VOLUME') {
-            setVolume(prev => {
-                const newVol = Math.max(0, Math.min(1, prev + delta * 0.05 * sensitivity));
-                if (soundRef.current) soundRef.current.volume(newVol);
-                return newVol;
-            });
         } else if (playingMode === 'RATING' && isRatingEditing) {
             const currentRating = currentSong?.rating || 0;
             // Use an accumulator to make it feel like volume movement
@@ -237,6 +239,13 @@ export function usePlayer() {
                 // Reset accumulator but keep the remainder for smooth continuous scrolling
                 ratingAccumulator.current = ratingAccumulator.current % threshold;
             }
+        } else {
+            // Default to volume for everything else in NOW_PLAYING (including RATING mode when not editing)
+            setVolume(prev => {
+                const newVol = Math.max(0, Math.min(1, prev + delta * 0.05 * sensitivity));
+                if (soundRef.current) soundRef.current.volume(newVol);
+                return newVol;
+            });
         }
         return;
     }
@@ -774,7 +783,7 @@ export function getMenuItems(view: View, sensitivity: number = 1, haptics: boole
       `Outer Ring Color: ${COLOR_MAP[outerRingColor] || 'Custom'}`,
       `Center Button Color: ${COLOR_MAP[centerButtonColor] || 'Custom'}`,
       `Wheel Icons Color: ${COLOR_MAP[wheelIconsColor] || 'Custom'}`,
-      `Stickers: ${stickers.filter(s => s !== null).length}/4`,
+      `Stickers (Beta): ${stickers.filter(s => s !== null).length}/4`,
       `Battery Percentage: ${showBatteryPercentage ? 'On' : 'Off'}`
     ];
     case 'DEVICE_COLOR_SETTINGS': return COLORS;

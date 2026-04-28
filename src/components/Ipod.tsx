@@ -75,6 +75,16 @@ export default function IpodScene() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isBackgroundExpanded, setIsBackgroundExpanded] = useState(false);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key.toLowerCase() === 'l') {
+            setIsLocked(prev => !prev);
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <div 
       className="w-full h-screen flex flex-col items-center justify-center p-4 overflow-hidden relative selection:bg-none transition-colors duration-500"
@@ -84,7 +94,7 @@ export default function IpodScene() {
       {/* Zoom Bar & Lock Button Container - Desktop Bottom */}
       <AnimatePresence>
         {player.showHud && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center z-50">
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center z-[100]">
             <motion.div 
               initial={{ y: 20, opacity: 0 }}
               animate={{ 
@@ -147,17 +157,22 @@ export default function IpodScene() {
 
               {/* Retro Lock Switch */}
               <button 
-                  onClick={() => setIsLocked(!isLocked)}
+                  onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsLocked(!isLocked);
+                  }}
                   className={cn(
-                      "w-12 h-12 flex-shrink-0 rounded-xl border-2 flex items-center justify-center transition-all duration-200 active:scale-95 z-10",
+                      "w-12 h-12 flex-shrink-0 rounded-xl border-2 flex items-center justify-center transition-all duration-200 active:scale-95 z-10 touch-none",
                       isLocked 
                           ? "bg-[#ff6b6b] border-[#d14b4b] shadow-[0_4px_0_#9c3434,0_6px_10px_rgba(0,0,0,0.3)] text-white" 
                           : "bg-[#e8e8e8] border-[#b0b0b0] shadow-[0_4px_0_#888,0_6px_10px_rgba(0,0,0,0.3)] text-[#666]"
                   )}
-                  title={isLocked ? "Unlock View" : "Lock View"}
+                  title={isLocked ? "Unlock View (L)" : "Lock View (L)"}
               >
                   {isLocked ? <Lock size={20} /> : <Unlock size={20} />}
               </button>
+
     
               {/* Right Toggle Button */}
               {!isBackgroundExpanded && (
@@ -345,7 +360,10 @@ function ClickWheelComponent({ player }: { player: any }) {
     const handlePointerMove = (e: any) => {
         if (!isRotating || lastAngle.current === null) return;
         
-        const { x, y } = getPointOnWheel(e);
+        const pt = getPointOnWheel(e);
+        if (!pt) return; // Guard against missing point
+        
+        const { x, y } = pt;
         const currentAngle = Math.atan2(y, x);
         
         let delta = currentAngle - lastAngle.current;
@@ -361,9 +379,27 @@ function ClickWheelComponent({ player }: { player: any }) {
     };
 
     const getPointOnWheel = (e: any) => {
-        const localPoint = e.object.worldToLocal(e.point.clone());
-        return { x: localPoint.x, y: localPoint.y };
+        if (!e.point || !e.object) return null;
+        try {
+            const localPoint = e.object.worldToLocal(e.point.clone());
+            return { x: localPoint.x, y: localPoint.y };
+        } catch (err) {
+            return null;
+        }
     };
+
+    // Global pointer up listener to ensure we stop rotating even if pointer up happens outside
+    useEffect(() => {
+        const handleGlobalUp = () => {
+            if (isRotating) {
+                setIsRotating(false);
+                lastAngle.current = null;
+            }
+        };
+
+        window.addEventListener('pointerup', handleGlobalUp);
+        return () => window.removeEventListener('pointerup', handleGlobalUp);
+    }, [isRotating]);
 
     const timerRef = useRef<any>(null);
     const longPressTriggered = useRef(false);

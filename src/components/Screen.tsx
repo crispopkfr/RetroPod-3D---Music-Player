@@ -285,7 +285,7 @@ export const Screen: React.FC<ScreenProps> = ({
               className="flex flex-col h-full"
             >
               <div 
-                className={cn("px-3 py-1 text-[12px] font-black uppercase tracking-widest border-b", theme.titleBar)}
+                className={cn("px-3 py-1 text-[12px] font-black uppercase tracking-widest", theme.titleBar)}
                 style={{ backgroundColor: selectorColor, color: selectorContrastColor }}
               >
                 {view === 'MENU' ? 'MENU' : 
@@ -355,7 +355,7 @@ export const Screen: React.FC<ScreenProps> = ({
                         key={item + idx}
                         className={cn(
                           "px-3 h-[25px] flex items-center justify-between text-[12px] font-black tracking-tight transition-colors duration-75",
-                          menuIndex === idx ? "shadow-inner" : theme.menuInactive
+                          menuIndex === idx ? "" : theme.menuInactive
                         )}
                         style={menuIndex === idx ? { backgroundColor: selectorColor, color: selectorContrastColor } : {}}
                       >
