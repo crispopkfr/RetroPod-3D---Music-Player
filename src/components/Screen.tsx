@@ -35,6 +35,9 @@ interface ScreenProps {
   wheelIconsColor: string;
   centerButtonColor: string;
   stickers: (string | null)[];
+  fontType: 'Classic' | 'Pixel';
+  fontColor: string;
+  selectorColor: string;
 }
 
 const RetroEqualizer: React.FC<{ isPlaying: boolean, theme: any }> = ({ isPlaying, theme }) => {
@@ -92,58 +95,72 @@ export const Screen: React.FC<ScreenProps> = ({
   outerRingColor,
   wheelIconsColor,
   centerButtonColor,
-  stickers
+  stickers,
+  fontType,
+  fontColor,
+  selectorColor
 }) => {
   const curPlaylist = playlists.find(p => p.id === filter.value);
   const isDeleting = curPlaylist?.isDeleting || false;
-  const menuItems = getMenuItems(view, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers);
+  const menuItems = getMenuItems(view, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor);
   const [batteryLevel, setBatteryLevel] = React.useState(100);
+
+  const getContrastColor = (hexColor: string) => {
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq >= 128 ? '#000000' : '#ffffff';
+  };
+
+  const selectorContrastColor = getContrastColor(selectorColor);
 
   const theme = {
     Light: {
-      screen: "bg-[#f8f8f8] text-gray-900 border-2 border-black",
+      screen: "bg-[#f8f8f8] border-2 border-black",
       statusBar: "border-b border-black/10",
-      titleBar: "bg-gray-900 text-white",
-      menuActive: "bg-gray-900 text-white",
-      menuInactive: "text-gray-900",
+      titleBar: "bg-gray-900/10 border-b border-black/10",
+      menuActive: "bg-black/10",
+      menuInactive: "",
       equalizerBg: "bg-gray-200/50",
-      equalizerBar: "bg-gray-900",
+      equalizerBar: "bg-current opacity-80",
       equalizerGradient: "linear-gradient(to bottom, transparent 1px, #f8f8f8 1px)",
-      progressBar: "bg-gray-900",
-      progressBarBg: "bg-gray-200",
-      border: "border-gray-900/10",
-      icon: "text-gray-900",
-      iconMuted: "text-gray-900/40"
+      progressBar: "bg-current",
+      progressBarBg: "bg-black/10",
+      border: "border-black/10",
+      icon: "",
+      iconMuted: "opacity-40"
     },
     Dark: {
-      screen: "bg-[#1a1a1a] text-gray-100 border-2 border-gray-800",
+      screen: "bg-[#1a1a1a] border-2 border-gray-800",
       statusBar: "border-b border-gray-800",
-      titleBar: "bg-gray-800 text-white border-b border-gray-700",
-      menuActive: "bg-gray-100 text-gray-900",
-      menuInactive: "text-gray-100",
+      titleBar: "bg-white/10 border-b border-white/10",
+      menuActive: "bg-white/20",
+      menuInactive: "",
       equalizerBg: "bg-gray-800/50",
-      equalizerBar: "bg-gray-100",
+      equalizerBar: "bg-current opacity-80",
       equalizerGradient: "linear-gradient(to bottom, transparent 1px, #1a1a1a 1px)",
-      progressBar: "bg-gray-100",
-      progressBarBg: "bg-gray-800",
-      border: "border-gray-100/10",
-      icon: "text-gray-100",
-      iconMuted: "text-gray-100/40"
+      progressBar: "bg-current",
+      progressBarBg: "bg-white/10",
+      border: "border-white/10",
+      icon: "",
+      iconMuted: "opacity-40"
     },
     Retro: {
-      screen: "bg-[#b3bfa3] text-black border-2 border-black",
+      screen: "bg-[#b3bfa3] border-2 border-black",
       statusBar: "border-b border-black/20",
-      titleBar: "bg-black text-[#b3bfa3]",
-      menuActive: "bg-black text-[#b3bfa3]",
-      menuInactive: "text-black",
+      titleBar: "bg-black/10 border-b border-black/20",
+      menuActive: "bg-black/20",
+      menuInactive: "",
       equalizerBg: "bg-black/5",
-      equalizerBar: "bg-black",
+      equalizerBar: "bg-current opacity-80",
       equalizerGradient: "linear-gradient(to bottom, transparent 1px, #b3bfa3 1px)",
-      progressBar: "bg-black",
+      progressBar: "bg-current",
       progressBarBg: "bg-black/5",
       border: "border-black/20",
-      icon: "text-black",
-      iconMuted: "text-black/40"
+      icon: "",
+      iconMuted: "opacity-40"
     }
   }[displayMode];
 
@@ -224,8 +241,10 @@ export const Screen: React.FC<ScreenProps> = ({
     <div 
       className={cn(
         "w-full h-full overflow-hidden select-none flex flex-col font-sans relative",
+        fontType === 'Pixel' && "font-pixel",
         theme.screen
       )}
+      style={{ color: fontColor }}
     >
       <input 
         id="folder-input" 
@@ -265,7 +284,10 @@ export const Screen: React.FC<ScreenProps> = ({
               exit={{ opacity: 0 }}
               className="flex flex-col h-full"
             >
-              <div className={cn("px-3 py-1 text-[12px] font-black uppercase tracking-widest", theme.titleBar)}>
+              <div 
+                className={cn("px-3 py-1 text-[12px] font-black uppercase tracking-widest border-b", theme.titleBar)}
+                style={{ backgroundColor: selectorColor, color: selectorContrastColor }}
+              >
                 {view === 'MENU' ? 'MENU' : 
                  view === 'THEME_SETTINGS' ? 'Customize' :
                  view === 'DEVICE_COLOR_SETTINGS' ? 'Body Color' :
@@ -273,6 +295,9 @@ export const Screen: React.FC<ScreenProps> = ({
                  view === 'OUTER_RING_COLOR_SETTINGS' ? 'Outer Ring Color' :
                  view === 'CENTER_BUTTON_COLOR_SETTINGS' ? 'Center Button Color' :
                  view === 'WHEEL_ICONS_COLOR_SETTINGS' ? 'Wheel Icons Color' :
+                 view === 'FONT_SETTINGS' ? 'Fonts' :
+                 view === 'FONT_COLOR_SETTINGS' ? 'Font Color' :
+                 view === 'SELECTOR_COLOR_SETTINGS' ? 'Selector Color' :
                  view === 'STICKER_SETTINGS' ? 'Stickers' :
                  view === 'MUSIC_MENU' ? 'Music' :
                  view === 'COVER_FLOW' ? 'Cover Flow' :
@@ -329,12 +354,13 @@ export const Screen: React.FC<ScreenProps> = ({
                       <div
                         key={item + idx}
                         className={cn(
-                          "px-3 h-[25px] flex items-center justify-between text-[12px] font-black tracking-tight",
-                          menuIndex === idx ? theme.menuActive : theme.menuInactive
+                          "px-3 h-[25px] flex items-center justify-between text-[12px] font-black tracking-tight transition-colors duration-75",
+                          menuIndex === idx ? "shadow-inner" : theme.menuInactive
                         )}
+                        style={menuIndex === idx ? { backgroundColor: selectorColor, color: selectorContrastColor } : {}}
                       >
                         <div className="flex items-center gap-2 truncate flex-1 pr-2">
-                            {(view === 'DEVICE_COLOR_SETTINGS' || view === 'WHEEL_COLOR_SETTINGS' || view === 'OUTER_RING_COLOR_SETTINGS' || view === 'CENTER_BUTTON_COLOR_SETTINGS' || view === 'WHEEL_ICONS_COLOR_SETTINGS') && (
+                            {(view === 'DEVICE_COLOR_SETTINGS' || view === 'WHEEL_COLOR_SETTINGS' || view === 'OUTER_RING_COLOR_SETTINGS' || view === 'CENTER_BUTTON_COLOR_SETTINGS' || view === 'WHEEL_ICONS_COLOR_SETTINGS' || view === 'FONT_COLOR_SETTINGS' || view === 'SELECTOR_COLOR_SETTINGS') && (
                                 <div 
                                     className={cn("w-3 h-3 flex-shrink-0 border", theme.border)}
                                     style={{ backgroundColor: item }} 

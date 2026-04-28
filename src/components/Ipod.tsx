@@ -15,7 +15,7 @@ import {
 import * as THREE from 'three';
 import { Screen } from './Screen';
 import { usePlayer } from '../hooks/usePlayer';
-import { Play, Pause, SkipBack, SkipForward, Lock, Unlock, ChevronRight } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Lock, Unlock, ChevronRight, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { cn } from '../lib/utils';
@@ -72,11 +72,14 @@ export default function IpodScene() {
   const [isLocked, setIsLocked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  const [zoom, setZoom] = useState(8);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isBackgroundExpanded, setIsBackgroundExpanded] = useState(false);
 
   return (
-    <div className="w-full h-screen bg-[#020617] flex flex-col items-center justify-center p-4 overflow-hidden relative selection:bg-none">
+    <div 
+      className="w-full h-screen flex flex-col items-center justify-center p-4 overflow-hidden relative selection:bg-none transition-colors duration-500"
+      style={{ backgroundColor: player.voidColor }}
+    >
       
       {/* Zoom Bar & Lock Button Container - Desktop Bottom */}
       <AnimatePresence>
@@ -87,17 +90,66 @@ export default function IpodScene() {
               animate={{ 
                 y: 0,
                 opacity: 1,
-                width: isExpanded ? 'auto' : '110px',
+                width: (isExpanded || isBackgroundExpanded) ? 'auto' : '120px',
               }}
               exit={{ y: 20, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="flex items-center p-3 bg-[#d1d1d1] rounded-2xl shadow-[inset_0_-2px_4px_rgba(0,0,0,0.3),0_10px_20px_rgba(0,0,0,0.4)] border-2 border-[#b0b0b0] overflow-hidden"
             >
+              {/* Left Collapsible Area (Background Color) */}
+              <AnimatePresence>
+                {isBackgroundExpanded && (
+                  <motion.div 
+                    initial={{ width: 0, opacity: 0, x: 10 }}
+                    animate={{ width: 140, opacity: 1, x: 0 }}
+                    exit={{ width: 0, opacity: 0, x: 10 }}
+                    className="flex items-center gap-4 pl-1"
+                  >
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={() => player.setVoidColor('#000000')}
+                            className={cn(
+                                "w-10 h-10 rounded-full border-2 border-white/20 shadow-lg transition-transform active:scale-90",
+                                player.voidColor === '#000000' ? "scale-110 border-white ring-2 ring-black/20" : "opacity-80"
+                            )}
+                            style={{ backgroundColor: '#000000' }}
+                            title="Black Void"
+                        />
+                        <button 
+                            onClick={() => player.setVoidColor('#ffffff')}
+                            className={cn(
+                                "w-10 h-10 rounded-full border-2 border-black/20 shadow-lg transition-transform active:scale-90",
+                                player.voidColor === '#ffffff' ? "scale-110 border-black ring-2 ring-white/20" : "opacity-80"
+                            )}
+                            style={{ backgroundColor: '#ffffff' }}
+                            title="White Void"
+                        />
+                    </div>
+                    {/* Separator */}
+                    <div className="w-[2px] h-10 bg-[#a0a0a0] shadow-[1px_0_0_white] flex-shrink-0" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Left Toggle Button */}
+              {!isExpanded && (
+                  <button 
+                    onClick={() => setIsBackgroundExpanded(!isBackgroundExpanded)}
+                    className="w-8 h-12 flex items-center justify-center text-[#666] hover:text-black transition-colors"
+                  >
+                    <motion.div
+                       animate={{ rotate: isBackgroundExpanded ? 180 : 0 }}
+                    >
+                      <ChevronLeft size={16} />
+                    </motion.div>
+                  </button>
+              )}
+
               {/* Retro Lock Switch */}
               <button 
                   onClick={() => setIsLocked(!isLocked)}
                   className={cn(
-                      "w-12 h-12 flex-shrink-0 rounded-xl border-2 flex items-center justify-center transition-all duration-200 active:scale-95",
+                      "w-12 h-12 flex-shrink-0 rounded-xl border-2 flex items-center justify-center transition-all duration-200 active:scale-95 z-10",
                       isLocked 
                           ? "bg-[#ff6b6b] border-[#d14b4b] shadow-[0_4px_0_#9c3434,0_6px_10px_rgba(0,0,0,0.3)] text-white" 
                           : "bg-[#e8e8e8] border-[#b0b0b0] shadow-[0_4px_0_#888,0_6px_10px_rgba(0,0,0,0.3)] text-[#666]"
@@ -107,19 +159,21 @@ export default function IpodScene() {
                   {isLocked ? <Lock size={20} /> : <Unlock size={20} />}
               </button>
     
-              {/* Toggle Button - Now Always Visible */}
-              <button 
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="w-8 h-12 flex items-center justify-center text-[#666] hover:text-black transition-colors"
-              >
-                <motion.div
-                  animate={{ rotate: isExpanded ? 180 : 0 }}
-                >
-                  <ChevronRight size={16} />
-                </motion.div>
-              </button>
+              {/* Right Toggle Button */}
+              {!isBackgroundExpanded && (
+                  <button 
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="w-8 h-12 flex items-center justify-center text-[#666] hover:text-black transition-colors"
+                  >
+                    <motion.div
+                       animate={{ rotate: isExpanded ? 180 : 0 }}
+                    >
+                      <ChevronRight size={16} />
+                    </motion.div>
+                  </button>
+              )}
     
-              {/* Collapsible Area */}
+              {/* Right Collapsible Area (Zoom) */}
               <AnimatePresence>
                 {isExpanded && (
                   <motion.div 
@@ -137,8 +191,8 @@ export default function IpodScene() {
                         min="4" 
                         max="12" 
                         step="0.1" 
-                        value={zoom} 
-                        onChange={(e) => setZoom(parseFloat(e.target.value))}
+                        value={player.zoom} 
+                        onChange={(e) => player.setZoom(parseFloat(e.target.value))}
                         className="w-full h-8 appearance-none bg-[#e8e8e8] rounded-lg border border-[#a0a0a0] shadow-inner cursor-pointer
                             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-7 
                             [&::-webkit-slider-thumb]:bg-[#f0f0f0] [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:border-2 
@@ -153,9 +207,9 @@ export default function IpodScene() {
       </AnimatePresence>
 
       <div className="w-full h-full">
-        <Canvas shadows camera={{ position: [0, 0, zoom], fov: 40 }}>
-          <color attach="background" args={['#020617']} />
-          <PerspectiveCamera makeDefault position={[0, 0, zoom]} />
+        <Canvas shadows camera={{ position: [0, 0, player.zoom], fov: 40 }}>
+          <color attach="background" args={[player.voidColor]} />
+          <PerspectiveCamera makeDefault position={[0, 0, player.zoom]} />
           
           <ambientLight intensity={0.6} />
           <pointLight position={[10, 10, 10]} intensity={60} />
@@ -169,7 +223,7 @@ export default function IpodScene() {
           </Float>
   
           <Environment preset="city" />
-          <ControlledOrbit isLocked={isLocked} zoom={zoom} />
+          <ControlledOrbit isLocked={isLocked} zoom={player.zoom} />
         </Canvas>
       </div>
     </div>
@@ -236,6 +290,9 @@ function IpodModel({ player }: { player: any }) {
               outerRingColor={player.outerRingColor}
               wheelIconsColor={player.wheelIconsColor}
               stickers={player.stickers}
+              fontType={player.fontType}
+              fontColor={player.fontColor}
+              selectorColor={player.selectorColor}
             />
           </div>
         </Html>
