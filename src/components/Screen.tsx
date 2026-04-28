@@ -28,11 +28,16 @@ interface ScreenProps {
   selectedPlaylistId: string | null;
   shuffle: boolean;
   showHud: boolean;
+  displayMode: 'Light' | 'Dark' | 'Retro';
+  deviceColor: string;
+  wheelColor: string;
+  centerButtonColor: string;
+  stickers: (string | null)[];
 }
 
-const RetroEqualizer: React.FC<{ isPlaying: boolean }> = ({ isPlaying }) => {
+const RetroEqualizer: React.FC<{ isPlaying: boolean, theme: any }> = ({ isPlaying, theme }) => {
   return (
-    <div className="flex items-end gap-[2px] h-[12px] px-1 bg-black/5 rounded-sm py-[1px]">
+    <div className={cn("flex items-end gap-[2px] h-[12px] px-1 rounded-sm py-[1px]", theme.equalizerBg)}>
       {[1, 2, 3, 4, 5].map((i) => (
         <motion.div
           key={i}
@@ -48,9 +53,9 @@ const RetroEqualizer: React.FC<{ isPlaying: boolean }> = ({ isPlaying }) => {
             delay: i * 0.1,
             ease: "linear"
           }}
-          className="w-[3px] bg-black"
+          className={cn("w-[3px]", theme.equalizerBar)}
           style={{
-            backgroundImage: 'linear-gradient(to bottom, transparent 1px, #b3bfa3 1px)',
+            backgroundImage: theme.equalizerGradient,
             backgroundSize: '100% 3px'
           }}
         />
@@ -78,12 +83,65 @@ export const Screen: React.FC<ScreenProps> = ({
   playlists,
   selectedPlaylistId,
   shuffle,
-  showHud
+  showHud,
+  displayMode,
+  deviceColor,
+  wheelColor,
+  centerButtonColor,
+  stickers
 }) => {
   const curPlaylist = playlists.find(p => p.id === filter.value);
   const isDeleting = curPlaylist?.isDeleting || false;
-  const menuItems = getMenuItems(view, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting);
+  const menuItems = getMenuItems(view, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor);
   const [batteryLevel, setBatteryLevel] = React.useState(100);
+
+  const theme = {
+    Light: {
+      screen: "bg-[#f8f8f8] text-gray-900 border-2 border-black",
+      statusBar: "border-b border-black/10",
+      titleBar: "bg-gray-900 text-white",
+      menuActive: "bg-gray-900 text-white",
+      menuInactive: "text-gray-900",
+      equalizerBg: "bg-gray-200/50",
+      equalizerBar: "bg-gray-900",
+      equalizerGradient: "linear-gradient(to bottom, transparent 1px, #f8f8f8 1px)",
+      progressBar: "bg-gray-900",
+      progressBarBg: "bg-gray-200",
+      border: "border-gray-900/10",
+      icon: "text-gray-900",
+      iconMuted: "text-gray-900/40"
+    },
+    Dark: {
+      screen: "bg-[#1a1a1a] text-gray-100 border-2 border-gray-800",
+      statusBar: "border-b border-gray-800",
+      titleBar: "bg-gray-800 text-white border-b border-gray-700",
+      menuActive: "bg-gray-100 text-gray-900",
+      menuInactive: "text-gray-100",
+      equalizerBg: "bg-gray-800/50",
+      equalizerBar: "bg-gray-100",
+      equalizerGradient: "linear-gradient(to bottom, transparent 1px, #1a1a1a 1px)",
+      progressBar: "bg-gray-100",
+      progressBarBg: "bg-gray-800",
+      border: "border-gray-100/10",
+      icon: "text-gray-100",
+      iconMuted: "text-gray-100/40"
+    },
+    Retro: {
+      screen: "bg-[#b3bfa3] text-black border-2 border-black",
+      statusBar: "border-b border-black/20",
+      titleBar: "bg-black text-[#b3bfa3]",
+      menuActive: "bg-black text-[#b3bfa3]",
+      menuInactive: "text-black",
+      equalizerBg: "bg-black/5",
+      equalizerBar: "bg-black",
+      equalizerGradient: "linear-gradient(to bottom, transparent 1px, #b3bfa3 1px)",
+      progressBar: "bg-black",
+      progressBarBg: "bg-black/5",
+      border: "border-black/20",
+      icon: "text-black",
+      iconMuted: "text-black/40"
+    }
+  }[displayMode];
 
   React.useEffect(() => {
     const getBattery = async () => {
@@ -162,7 +220,7 @@ export const Screen: React.FC<ScreenProps> = ({
     <div 
       className={cn(
         "w-full h-full overflow-hidden select-none flex flex-col font-sans relative",
-        "bg-[#b3bfa3] text-black border-2 border-black"
+        theme.screen
       )}
     >
       <input 
@@ -174,16 +232,18 @@ export const Screen: React.FC<ScreenProps> = ({
         onChange={handleFileChange} 
       />
       {/* Status Bar */}
-      <div className="h-8 flex items-center justify-between px-4 text-[10px] font-black tracking-widest border-b border-black/20 relative z-20">
+      <div className={cn("h-8 flex items-center justify-between px-4 text-[10px] font-black tracking-widest border-b relative z-20", theme.statusBar)}>
         <div className="flex items-center gap-2">
-            <RetroEqualizer isPlaying={isPlaying} />
+            <RetroEqualizer isPlaying={isPlaying} theme={theme} />
         </div>
-        <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        <span className="absolute left-1/2 -translate-x-1/2">
+          {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </span>
         <div className="flex items-center gap-1.5 min-w-[30px] justify-end">
             {showBatteryPercentage && <span>{batteryLevel}%</span>}
-            <div className="w-5 h-2.5 border border-black p-[0.5px] items-center flex">
+            <div className={cn("w-5 h-2.5 border p-[0.5px] items-center flex", displayMode === 'Retro' ? 'border-black' : displayMode === 'Dark' ? 'border-gray-100' : 'border-gray-900')}>
                 <div 
-                  className="h-full bg-black transition-all duration-500" 
+                  className={cn("h-full transition-all duration-500", theme.progressBar)} 
                   style={{ width: `${batteryLevel}%` }}
                 />
             </div>
@@ -201,11 +261,13 @@ export const Screen: React.FC<ScreenProps> = ({
               exit={{ opacity: 0 }}
               className="flex flex-col h-full"
             >
-              <div className="px-3 py-1 bg-black text-[#b3bfa3] text-[12px] font-black uppercase tracking-widest">
+              <div className={cn("px-3 py-1 text-[12px] font-black uppercase tracking-widest", theme.titleBar)}>
                 {view === 'MENU' ? 'MENU' : 
-                 view === 'THEME_SETTINGS' ? 'Theme' :
+                 view === 'THEME_SETTINGS' ? 'Customize' :
                  view === 'DEVICE_COLOR_SETTINGS' ? 'Device Color' :
                  view === 'WHEEL_COLOR_SETTINGS' ? 'Wheel Color' :
+                 view === 'CENTER_BUTTON_COLOR_SETTINGS' ? 'Center Button' :
+                 view === 'STICKER_SETTINGS' ? 'Stickers' :
                  view === 'MUSIC_MENU' ? 'Music' :
                  view === 'COVER_FLOW' ? 'Cover Flow' :
                  view === 'ARTISTS_VIEW' ? 'ARTISTS' :
@@ -262,17 +324,26 @@ export const Screen: React.FC<ScreenProps> = ({
                         key={item + idx}
                         className={cn(
                           "px-3 h-[25px] flex items-center justify-between text-[12px] font-black tracking-tight",
-                          menuIndex === idx ? "bg-black text-[#b3bfa3]" : "text-black"
+                          menuIndex === idx ? theme.menuActive : theme.menuInactive
                         )}
                       >
-                        <div className="flex items-center gap-2 truncate">
-                            {(view === 'DEVICE_COLOR_SETTINGS' || view === 'WHEEL_COLOR_SETTINGS') && (
+                        <div className="flex items-center gap-2 truncate flex-1 pr-2">
+                            {(view === 'DEVICE_COLOR_SETTINGS' || view === 'WHEEL_COLOR_SETTINGS' || view === 'CENTER_BUTTON_COLOR_SETTINGS') && (
                                 <div 
-                                    className="w-3 h-3 flex-shrink-0 border border-black/20" 
+                                    className={cn("w-3 h-3 flex-shrink-0 border", theme.border)}
                                     style={{ backgroundColor: item }} 
                                 />
                             )}
-                            <span className="truncate">{COLOR_MAP[item] || item}</span>
+                            <div className="flex justify-between w-full items-center">
+                                <span className="truncate">{COLOR_MAP[item] || (item.includes(': ') ? item.split(': ')[0] : item)}</span>
+                                {item.includes(': ') && (
+                                    <span className="opacity-60 text-[10px] ml-2 flex-shrink-0">{item.split(': ')[1]}</span>
+                                )}
+                                {view === 'STICKER_SETTINGS' && item.startsWith('Slot') && (() => {
+                                    const slotIdx = parseInt(item.split(' ')[1]) - 1;
+                                    return stickers[slotIdx] ? <span className="text-[10px] opacity-60 ml-2">Set</span> : <span className="text-[10px] opacity-40 ml-2 italic">Empty</span>;
+                                })()}
+                            </div>
                         </div>
                         {view === 'MANAGE_PLAYLIST_VIEW' && idx > 0 && (() => {
                             const playlist = playlists.find(p => p.id === selectedPlaylistId);
@@ -297,7 +368,7 @@ export const Screen: React.FC<ScreenProps> = ({
               exit={{ opacity: 0 }}
               className="h-full flex flex-col pt-2 px-4 items-center justify-start text-center gap-2"
             >
-                <div className="w-24 h-24 bg-black/10 border border-black/20 overflow-hidden shadow-sm flex items-center justify-center">
+                <div className={cn("w-24 h-24 border flex items-center justify-center overflow-hidden shadow-sm", theme.progressBarBg, theme.border)}>
                    {currentSong?.cover ? (
                     <img 
                       src={currentSong.cover} 
@@ -306,14 +377,14 @@ export const Screen: React.FC<ScreenProps> = ({
                       referrerPolicy="no-referrer"
                     />
                    ) : (
-                    <Music size={32} className="text-black/20" />
+                    <Music size={32} className={theme.iconMuted} />
                    )}
                 </div>
 
                 <div className="space-y-0 text-center w-full">
                     <h2 className="text-[12px] font-black uppercase leading-tight truncate px-2">{currentSong?.title}</h2>
-                    <p className="text-[10px] font-bold opacity-60 truncate px-2">{currentSong?.artist}</p>
-                    <p className="text-[9px] font-bold opacity-40 truncate px-2 capitalize">{currentSong?.album}</p>
+                    <p className={cn("text-[10px] font-bold truncate px-2", theme.iconMuted)}>{currentSong?.artist}</p>
+                    <p className={cn("text-[9px] font-bold truncate px-2 capitalize", theme.iconMuted)}>{currentSong?.album}</p>
                 </div>
 
                 <div className="w-full max-w-[150px] mt-1">
@@ -326,9 +397,9 @@ export const Screen: React.FC<ScreenProps> = ({
                                 exit={{ opacity: 0, y: -10 }}
                                 className="space-y-1"
                             >
-                                <div className="h-2.5 w-full border-2 border-black p-[1px] bg-black/5">
+                                <div className={cn("h-2.5 w-full border-2 p-[1px]", displayMode === 'Retro' ? 'border-black bg-black/5' : displayMode === 'Dark' ? 'border-gray-800 bg-gray-800/50' : 'border-gray-200 bg-gray-200/50')}>
                                     <div 
-                                        className="h-full bg-black transition-all duration-300" 
+                                        className={cn("h-full transition-all duration-300", theme.progressBar)} 
                                         style={{ width: `${(progress / (duration || 1)) * 100}%` }}
                                     />
                                 </div>
@@ -349,9 +420,9 @@ export const Screen: React.FC<ScreenProps> = ({
                             >
                                 <div className="flex items-center gap-2">
                                     <Volume2 size={10} className="flex-shrink-0" />
-                                    <div className="h-2.5 flex-1 border-2 border-black p-[1px] bg-black/5">
+                                    <div className={cn("h-2.5 flex-1 border-2 p-[1px]", displayMode === 'Retro' ? 'border-black bg-black/5' : displayMode === 'Dark' ? 'border-gray-800 bg-gray-800/50' : 'border-gray-200 bg-gray-200/50')}>
                                         <div 
-                                            className="h-full bg-black transition-all duration-300" 
+                                            className={cn("h-full transition-all duration-300", theme.progressBar)} 
                                             style={{ width: `${volume * 100}%` }}
                                         />
                                     </div>
@@ -375,12 +446,12 @@ export const Screen: React.FC<ScreenProps> = ({
                                             size={16} 
                                             className={cn(
                                                 "transition-all duration-200",
-                                                (currentSong?.rating || 0) >= star ? "fill-black text-black" : "text-black/20"
+                                                (currentSong?.rating || 0) >= star ? cn("fill-current", theme.icon) : theme.iconMuted
                                             )} 
                                         />
                                     ))}
                                 </div>
-                                <div className="text-center text-[8px] font-black uppercase tracking-tighter opacity-60">
+                                <div className={cn("text-center text-[8px] font-black uppercase tracking-tighter", theme.iconMuted)}>
                                     {isRatingEditing ? "SET RATING" : "Hold center to rate"}
                                 </div>
                             </motion.div>

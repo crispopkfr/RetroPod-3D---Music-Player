@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { 
   OrbitControls, 
@@ -8,7 +8,9 @@ import {
   Float, 
   ContactShadows,
   MeshReflectorMaterial,
-  PerspectiveCamera
+  PerspectiveCamera,
+  Decal,
+  useTexture
 } from '@react-three/drei';
 import * as THREE from 'three';
 import { Screen } from './Screen';
@@ -70,7 +72,7 @@ export default function IpodScene() {
   const [isLocked, setIsLocked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  const [zoom, setZoom] = useState(12);
+  const [zoom, setZoom] = useState(8);
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -161,7 +163,9 @@ export default function IpodScene() {
           <pointLight position={[0, -10, 5]} intensity={20} color="#ffffff" />
           
           <Float speed={isLocked ? 0 : 1} rotationIntensity={isLocked ? 0 : 0.2} floatIntensity={isLocked ? 0 : 0.15}>
-            <IpodModel player={player} />
+            <Suspense fallback={null}>
+              <IpodModel player={player} />
+            </Suspense>
           </Float>
   
           <Environment preset="city" />
@@ -174,21 +178,26 @@ export default function IpodScene() {
 
 function IpodModel({ player }: { player: any }) {
   const bodyRef = useRef<THREE.Group>(null);
-  
+  const stickers = player.stickers || [];
+
   return (
     <group ref={bodyRef}>
       {/* Chassis */}
       <RoundedBox args={[4, 6.2, 0.45]} radius={0.3} smoothness={12} castShadow receiveShadow>
         <meshPhysicalMaterial 
             color={player.deviceColor} 
-            roughness={0.1} 
-            metalness={0}
+            roughness={0.25} 
+            metalness={0.05}
             reflectivity={0.2}
             clearcoat={1}
-            clearcoatRoughness={0}
-            envMapIntensity={1}
+            clearcoatRoughness={0.1}
+            envMapIntensity={1.2}
             side={THREE.DoubleSide}
         />
+        {stickers[0] && <Sticker url={stickers[0]} position={[-1.4, -0.8, 0.23]} />}
+        {stickers[1] && <Sticker url={stickers[1]} position={[1.4, -0.8, 0.23]} />}
+        {stickers[2] && <Sticker url={stickers[2]} position={[-1.4, -2.4, 0.23]} />}
+        {stickers[3] && <Sticker url={stickers[3]} position={[1.4, -2.4, 0.23]} />}
       </RoundedBox>
 
       {/* Screen Area */}
@@ -220,6 +229,11 @@ function IpodModel({ player }: { player: any }) {
               selectedPlaylistId={player.selectedPlaylistId}
               shuffle={player.shuffle}
               showHud={player.showHud}
+              displayMode={player.displayMode}
+              deviceColor={player.deviceColor}
+              wheelColor={player.wheelColor}
+              centerButtonColor={player.centerButtonColor}
+              stickers={player.stickers}
             />
           </div>
         </Html>
@@ -228,6 +242,25 @@ function IpodModel({ player }: { player: any }) {
       {/* Click Wheel */}
       <ClickWheelComponent player={player} />
     </group>
+  );
+}
+
+function Sticker({ url, position }: { url: string, position: [number, number, number] }) {
+  const texture = useTexture(url);
+  return (
+    <Decal 
+        position={position} 
+        rotation={[0, 0, 0]} 
+        scale={[1.2, 1.2, 1.2]} 
+    >
+      <meshBasicMaterial 
+        map={texture} 
+        transparent 
+        polygonOffset 
+        polygonOffsetFactor={-1}
+        side={THREE.DoubleSide}
+      />
+    </Decal>
   );
 }
 
@@ -325,7 +358,7 @@ function ClickWheelComponent({ player }: { player: any }) {
     };
 
     return (
-        <group position={[0, -1.6, 0.23]}>
+        <group position={[0, -1.6, 0.26]}>
             {/* Outer Wheel Base (The indentation/rim) */}
             <mesh position={[0, 0, -0.01]}>
                 <circleGeometry args={[1.2, 64]} />
@@ -397,7 +430,7 @@ function ClickWheelComponent({ player }: { player: any }) {
             >
                 <circleGeometry args={[0.38, 64]} />
                 <meshPhysicalMaterial 
-                    color="#ffffff" 
+                    color={player.centerButtonColor} 
                     roughness={0.1} 
                     metalness={0}
                     reflectivity={0.2}
