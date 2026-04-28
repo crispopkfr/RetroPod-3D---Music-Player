@@ -326,7 +326,7 @@ export function usePlayer() {
   }, [currentView, sensitivity, haptics, duration, playingMode, currentSong, updateSongRating, playlists, userSongs, filter, showBatteryPercentage, shuffle, showHud, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled]);
 
   const selectItem = useCallback(() => {
-    if (isSoundEnabled) clickSound.current?.play();
+    if (isSoundEnabled) buttonSound.current?.play();
     if (haptics && window.navigator.vibrate) {
       window.navigator.vibrate(20);
     }
