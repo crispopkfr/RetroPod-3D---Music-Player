@@ -39,6 +39,11 @@ interface ScreenProps {
   fontColor: string;
   selectorColor: string;
   isSoundEnabled: boolean;
+  bodyTexture: string | null;
+  isShatteredScreen: boolean;
+  shatterTexture: string | null;
+  glassShineTextureUrl?: string;
+  defaultShatterTextureUrl?: string;
 }
 
 const RetroEqualizer: React.FC<{ isPlaying: boolean, theme: any }> = ({ isPlaying, theme }) => {
@@ -100,11 +105,16 @@ export const Screen: React.FC<ScreenProps> = ({
   fontType,
   fontColor,
   selectorColor,
-  isSoundEnabled
+  isSoundEnabled,
+  bodyTexture,
+  isShatteredScreen,
+  shatterTexture,
+  glassShineTextureUrl,
+  defaultShatterTextureUrl
 }) => {
   const curPlaylist = playlists.find(p => p.id === filter.value);
   const isDeleting = curPlaylist?.isDeleting || false;
-  const menuItems = getMenuItems(view, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled);
+  const menuItems = getMenuItems(view, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled, bodyTexture, isShatteredScreen, shatterTexture);
   const [batteryLevel, setBatteryLevel] = React.useState(100);
 
   const getContrastColor = (hexColor: string) => {
@@ -256,6 +266,7 @@ export const Screen: React.FC<ScreenProps> = ({
         className="hidden" 
         onChange={handleFileChange} 
       />
+
       {/* Status Bar */}
       <div className={cn("h-8 flex items-center justify-between px-4 text-[10px] font-black tracking-widest border-b relative z-20", theme.statusBar)}>
         <div className="flex items-center gap-2">
@@ -293,6 +304,8 @@ export const Screen: React.FC<ScreenProps> = ({
                 {view === 'MENU' ? 'MENU' : 
                  view === 'THEME_SETTINGS' ? 'Customize' :
                  view === 'DEVICE_COLOR_SETTINGS' ? 'Body Color' :
+                 view === 'BODY_TEXTURE_SETTINGS' ? 'Body Damage' :
+                 view === 'SHATTER_TEXTURE_SETTINGS' ? 'Shattered Screen' :
                  view === 'WHEEL_COLOR_SETTINGS' ? 'Wheel Color' :
                  view === 'OUTER_RING_COLOR_SETTINGS' ? 'Outer Ring Color' :
                  view === 'CENTER_BUTTON_COLOR_SETTINGS' ? 'Center Button Color' :
@@ -496,6 +509,29 @@ export const Screen: React.FC<ScreenProps> = ({
           ) : null}
         </AnimatePresence>
       </div>
+
+      {/* Glassy Shine Overlay */}
+      {glassShineTextureUrl && (
+        <div 
+          className="absolute inset-0 z-[500] pointer-events-none opacity-60 mix-blend-screen"
+          style={{ 
+            backgroundImage: `url(${glassShineTextureUrl})`,
+            backgroundSize: 'cover'
+          }}
+        />
+      )}
+
+      {/* Shattered Screen Overlay */}
+      {isShatteredScreen && (
+        <div 
+          className="absolute inset-0 z-[600] pointer-events-none"
+          style={{ 
+            backgroundImage: `url(${shatterTexture || defaultShatterTextureUrl})`,
+            backgroundSize: 'cover',
+            mixBlendMode: 'multiply' // Make white transparent if using data URI
+          }}
+        />
+      )}
     </div>
   );
 };

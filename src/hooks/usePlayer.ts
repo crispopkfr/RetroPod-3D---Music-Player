@@ -54,6 +54,9 @@ export function usePlayer() {
     const [fontColor, setFontColor] = useState('#000000'); // Default black
     const [selectorColor, setSelectorColor] = useState('#000000'); // Default black
     const [voidColor, setVoidColor] = useState('#000000'); // Default black
+    const [customBackground, setCustomBackground] = useState<string | null>(null);
+    const [bodyTexture, setBodyTexture] = useState<string | null>(null);
+    const [backgroundBrightness, setBackgroundBrightness] = useState<number>(0);
     const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [stickers, setStickers] = useState<(string | null)[]>(new Array(4).fill(null));
   const [zoom, setZoom] = useState(10.4);
@@ -65,6 +68,8 @@ export function usePlayer() {
   const [showHud, setShowHud] = useState(true);
   const [isDeletingPlaylist, setIsDeletingPlaylist] = useState(false);
     const [displayMode, setDisplayMode] = useState<'Light' | 'Dark' | 'Retro'>('Light');
+    const [isShatteredScreen, setIsShatteredScreen] = useState(false);
+    const [shatterTexture, setShatterTexture] = useState<string | null>(null);
     const [showBatteryPercentage, setShowBatteryPercentage] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -78,6 +83,7 @@ export function usePlayer() {
       fontColor,
       selectorColor,
       voidColor,
+      customBackground,
       isSoundEnabled,
       stickers: [...stickers],
       zoom,
@@ -87,6 +93,9 @@ export function usePlayer() {
       shuffle,
       showHud,
       displayMode,
+      isShatteredScreen,
+      shatterTexture,
+      bodyTexture,
       showBatteryPercentage,
   });
 
@@ -110,6 +119,8 @@ export function usePlayer() {
       shuffle,
       showHud,
       displayMode,
+      isShatteredScreen,
+      shatterTexture,
       showBatteryPercentage,
       playlists,
       zoom,
@@ -117,6 +128,8 @@ export function usePlayer() {
       fontColor,
       selectorColor,
       voidColor,
+      customBackground,
+      bodyTexture,
       isSoundEnabled
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -128,7 +141,7 @@ export function usePlayer() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, sensitivity, haptics, shuffle, showHud, displayMode, showBatteryPercentage, playlists, zoom, fontType, fontColor, selectorColor, voidColor]);
+  }, [deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, sensitivity, haptics, shuffle, showHud, displayMode, isShatteredScreen, showBatteryPercentage, playlists, zoom, fontType, fontColor, selectorColor, voidColor, customBackground, bodyTexture, shatterTexture]);
 
   const importData = useCallback(() => {
     const input = document.createElement('input');
@@ -159,12 +172,16 @@ export function usePlayer() {
             if (data.shuffle !== undefined) setShuffle(!!data.shuffle);
             if (data.showHud !== undefined) setShowHud(!!data.showHud);
             if (data.displayMode) setDisplayMode(data.displayMode);
+            if (data.isShatteredScreen !== undefined) setIsShatteredScreen(!!data.isShatteredScreen);
+            if (data.shatterTexture) setShatterTexture(data.shatterTexture);
             if (data.showBatteryPercentage !== undefined) setShowBatteryPercentage(!!data.showBatteryPercentage);
             if (data.playlists && Array.isArray(data.playlists)) setPlaylists(data.playlists);
             if (data.fontType) setFontType(data.fontType);
             if (data.fontColor) setFontColor(data.fontColor);
             if (data.selectorColor) setSelectorColor(data.selectorColor);
             if (data.voidColor) setVoidColor(data.voidColor);
+            if (data.customBackground) setCustomBackground(data.customBackground);
+            if (data.bodyTexture) setBodyTexture(data.bodyTexture);
             if (data.isSoundEnabled !== undefined) setIsSoundEnabled(!!data.isSoundEnabled);
             
             alert('Settings imported successfully!');
@@ -299,7 +316,7 @@ export function usePlayer() {
 
     const curPlaylist = playlists.find(p => p.id === filter.value);
     const isDeleting = curPlaylist?.isDeleting || false;
-    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled);
+    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled, bodyTexture, isShatteredScreen, shatterTexture);
     if (menuItems.length === 0) return;
 
     setMenuIndex((prev) => {
@@ -323,7 +340,7 @@ export function usePlayer() {
         window.navigator.vibrate(5);
     }
     if (isSoundEnabled) tickSound.current?.play();
-  }, [currentView, sensitivity, haptics, duration, playingMode, currentSong, updateSongRating, playlists, userSongs, filter, showBatteryPercentage, shuffle, showHud, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled]);
+  }, [currentView, sensitivity, haptics, duration, playingMode, currentSong, updateSongRating, playlists, userSongs, filter, showBatteryPercentage, shuffle, showHud, displayMode, isShatteredScreen, shatterTexture, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled, bodyTexture]);
 
   const selectItem = useCallback(() => {
     if (isSoundEnabled) buttonSound.current?.play();
@@ -343,7 +360,7 @@ export function usePlayer() {
 
     const curPlaylist = playlists.find(p => p.id === filter.value);
     const isDeleting = curPlaylist?.isDeleting || false;
-    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled);
+    const menuItems = getMenuItems(currentView, sensitivity, haptics, userSongs, filter, showBatteryPercentage, playlists, shuffle, showHud, isDeleting, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled, bodyTexture, isShatteredScreen, shatterTexture);
     const item = menuItems[menuIndex];
 
     if (currentView === 'MENU') {
@@ -503,6 +520,9 @@ export function usePlayer() {
               if (prev === 'Dark') return 'Retro';
               return 'Light';
           });
+        } else if (item.startsWith('Shattered Screen')) {
+            setCurrentView('SHATTER_TEXTURE_SETTINGS');
+            setMenuIndex(0);
         } else if (item === 'Export') {
             exportData();
         } else if (item === 'Import') {
@@ -518,6 +538,9 @@ export function usePlayer() {
             setMenuIndex(0);
         } else if (item.startsWith('Body Color')) {
             setCurrentView('DEVICE_COLOR_SETTINGS');
+            setMenuIndex(0);
+        } else if (item.startsWith('Body Damage')) {
+            setCurrentView('BODY_TEXTURE_SETTINGS');
             setMenuIndex(0);
         } else if (item.startsWith('Wheel Color')) {
             setCurrentView('WHEEL_COLOR_SETTINGS');
@@ -552,6 +575,7 @@ export function usePlayer() {
                setShowBatteryPercentage(s.showBatteryPercentage);
                setZoom(s.zoom);
                setVoidColor(s.voidColor);
+               setCustomBackground(null);
                setIsSoundEnabled(s.isSoundEnabled);
                setSensitivity(s.sensitivity);
                setHaptics(s.haptics);
@@ -575,6 +599,50 @@ export function usePlayer() {
         setFontColor(item);
     } else if (currentView === 'SELECTOR_COLOR_SETTINGS') {
         setSelectorColor(item);
+    } else if (currentView === 'BODY_TEXTURE_SETTINGS') {
+        if (item === 'Set Texture') {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/png';
+            input.onchange = (e) => {
+                const file = (e.target as HTMLInputElement).files?.[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (re) => {
+                        const dataUrl = re.target?.result as string;
+                        setBodyTexture(dataUrl);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        } else if (item === 'Clear Texture') {
+            setBodyTexture(null);
+        }
+    } else if (currentView === 'SHATTER_TEXTURE_SETTINGS') {
+        if (item.startsWith('Status')) {
+            setIsShatteredScreen(prev => !prev);
+        } else if (item === 'Set Texture') {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/png';
+            input.onchange = (e) => {
+                const file = (e.target as HTMLInputElement).files?.[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (re) => {
+                        const dataUrl = re.target?.result as string;
+                        setShatterTexture(dataUrl);
+                        setIsShatteredScreen(true);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        } else if (item === 'Clear Texture') {
+            setShatterTexture(null);
+            setIsShatteredScreen(false);
+        }
     } else if (currentView === 'STICKER_SETTINGS') {
         const slotIdx = parseInt(item.split(' ')[1]) - 1;
         if (stickers[slotIdx]) {
@@ -607,7 +675,7 @@ export function usePlayer() {
         };
         input.click();
     }
-  }, [currentView, menuIndex, haptics, isPlaying, userSongs, filter, showBatteryPercentage, playlists, sensitivity, selectedPlaylistId, updateSongMetadata, shuffle, displayMode, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled]);
+  }, [currentView, menuIndex, haptics, isPlaying, userSongs, filter, showBatteryPercentage, playlists, sensitivity, selectedPlaylistId, updateSongMetadata, shuffle, displayMode, isShatteredScreen, shatterTexture, deviceColor, wheelColor, centerButtonColor, outerRingColor, wheelIconsColor, stickers, fontType, fontColor, selectorColor, isSoundEnabled, bodyTexture]);
 
   const togglePlay = useCallback(() => {
     if (isSoundEnabled) buttonSound.current?.play();
@@ -727,17 +795,18 @@ export function usePlayer() {
       } else if (currentView === 'THEME_SETTINGS') {
           setCurrentView('SETTINGS');
           setMenuIndex(1); // Customize
-      } else if (currentView === 'DEVICE_COLOR_SETTINGS' || currentView === 'WHEEL_COLOR_SETTINGS' || currentView === 'OUTER_RING_COLOR_SETTINGS' || currentView === 'CENTER_BUTTON_COLOR_SETTINGS' || currentView === 'WHEEL_ICONS_COLOR_SETTINGS' || currentView === 'STICKER_SETTINGS' || currentView === 'FONT_SETTINGS' || currentView === 'FONT_COLOR_SETTINGS' || currentView === 'SELECTOR_COLOR_SETTINGS') {
+      } else if (currentView === 'DEVICE_COLOR_SETTINGS' || currentView === 'WHEEL_COLOR_SETTINGS' || currentView === 'OUTER_RING_COLOR_SETTINGS' || currentView === 'CENTER_BUTTON_COLOR_SETTINGS' || currentView === 'WHEEL_ICONS_COLOR_SETTINGS' || currentView === 'STICKER_SETTINGS' || currentView === 'FONT_SETTINGS' || currentView === 'FONT_COLOR_SETTINGS' || currentView === 'SELECTOR_COLOR_SETTINGS' || currentView === 'BODY_TEXTURE_SETTINGS' || currentView === 'SHATTER_TEXTURE_SETTINGS') {
           setCurrentView('THEME_SETTINGS');
-          if (currentView === 'SELECTOR_COLOR_SETTINGS') setMenuIndex(1);
-          else if (currentView === 'FONT_SETTINGS') setMenuIndex(2);
-          else if (currentView === 'FONT_COLOR_SETTINGS') setMenuIndex(3);
-          else if (currentView === 'DEVICE_COLOR_SETTINGS') setMenuIndex(4);
-          else if (currentView === 'WHEEL_COLOR_SETTINGS') setMenuIndex(5);
-          else if (currentView === 'OUTER_RING_COLOR_SETTINGS') setMenuIndex(6);
-          else if (currentView === 'CENTER_BUTTON_COLOR_SETTINGS') setMenuIndex(7);
-          else if (currentView === 'WHEEL_ICONS_COLOR_SETTINGS') setMenuIndex(8);
-          else setMenuIndex(9); // Stickers
+          if (currentView === 'SELECTOR_COLOR_SETTINGS') setMenuIndex(2); // Adjusted for Shatter Texture in list
+          else if (currentView === 'FONT_SETTINGS') setMenuIndex(3);
+          else if (currentView === 'FONT_COLOR_SETTINGS') setMenuIndex(4);
+          else if (currentView === 'DEVICE_COLOR_SETTINGS') setMenuIndex(5);
+          else if (currentView === 'BODY_TEXTURE_SETTINGS') setMenuIndex(6);
+          else if (currentView === 'WHEEL_COLOR_SETTINGS') setMenuIndex(7);
+          else if (currentView === 'OUTER_RING_COLOR_SETTINGS') setMenuIndex(8);
+          else if (currentView === 'CENTER_BUTTON_COLOR_SETTINGS') setMenuIndex(9);
+          else if (currentView === 'WHEEL_ICONS_COLOR_SETTINGS') setMenuIndex(10);
+          else setMenuIndex(11); // Stickers
       } else if (currentView === 'SETTINGS') {
           setCurrentView('MENU');
           setMenuIndex(1); // Settings
@@ -769,6 +838,10 @@ export function usePlayer() {
     setMenuIndex,
     displayMode,
     setDisplayMode,
+    isShatteredScreen,
+    setIsShatteredScreen,
+    shatterTexture,
+    setShatterTexture,
     deviceColor,
     wheelColor,
     centerButtonColor,
@@ -784,6 +857,12 @@ export function usePlayer() {
     setSelectorColor,
     voidColor,
     setVoidColor,
+    customBackground,
+    setCustomBackground,
+    bodyTexture,
+    setBodyTexture,
+    backgroundBrightness,
+    setBackgroundBrightness,
     isSoundEnabled,
     setIsSoundEnabled,
     userSongs,
@@ -823,7 +902,7 @@ export const COLOR_MAP: Record<string, string> = {
 
 export const COLORS = Object.keys(COLOR_MAP);
 
-export function getMenuItems(view: View, sensitivity: number = 1, haptics: boolean = true, userSongs: Song[] = [], filter: any = { type: 'none' }, showBatteryPercentage: boolean = false, playlists: Playlist[] = [], shuffle: boolean = false, showHud: boolean = false, isDeleting: boolean = false, displayMode: string = 'Light', deviceColor: string = '#e5e7eb', wheelColor: string = '#ffffff', centerButtonColor: string = '#ffffff', outerRingColor: string = '#e8e8e8', wheelIconsColor: string = '#808080', stickers: (string | null)[] = [], fontType: string = 'Classic', fontColor: string = '#000000', selectorColor: string = '#000000', isSoundEnabled: boolean = true): string[] {
+export function getMenuItems(view: View, sensitivity: number = 1, haptics: boolean = true, userSongs: Song[] = [], filter: any = { type: 'none' }, showBatteryPercentage: boolean = false, playlists: Playlist[] = [], shuffle: boolean = false, showHud: boolean = false, isDeleting: boolean = false, displayMode: string = 'Light', deviceColor: string = '#e5e7eb', wheelColor: string = '#ffffff', centerButtonColor: string = '#ffffff', outerRingColor: string = '#e8e8e8', wheelIconsColor: string = '#808080', stickers: (string | null)[] = [], fontType: string = 'Classic', fontColor: string = '#000000', selectorColor: string = '#000000', isSoundEnabled: boolean = true, bodyTexture: string | null = null, isShatteredScreen: boolean = false, shatterTexture: string | null = null): string[] {
   switch (view) {
     case 'MENU': return ['Music', 'Settings'];
     case 'MUSIC_MENU': return ['Now Playing', 'Artists', 'Cover Flow', 'Albums', 'Songs', 'Playlists'];
@@ -858,10 +937,12 @@ export function getMenuItems(view: View, sensitivity: number = 1, haptics: boole
     ];
     case 'THEME_SETTINGS': return [
       `Display Mode: ${displayMode}`,
+      `Shattered Screen: ${shatterTexture ? (isShatteredScreen ? 'On' : 'Off') : 'None'}`,
       `Selector Color: ${COLOR_MAP[selectorColor] || 'Custom'}`,
       `Fonts: ${fontType}`,
       `Font Color: ${COLOR_MAP[fontColor] || 'Custom'}`,
       `Body Color: ${COLOR_MAP[deviceColor] || 'Custom'}`, 
+      `Body Damage: ${bodyTexture ? 'Set' : 'None'}`,
       `Wheel Color: ${COLOR_MAP[wheelColor] || 'Custom'}`, 
       `Outer Ring Color: ${COLOR_MAP[outerRingColor] || 'Custom'}`,
       `Center Button Color: ${COLOR_MAP[centerButtonColor] || 'Custom'}`,
@@ -880,6 +961,12 @@ export function getMenuItems(view: View, sensitivity: number = 1, haptics: boole
     case 'FONT_SETTINGS': return ['Classic', 'Pixel'];
     case 'FONT_COLOR_SETTINGS': return COLORS;
     case 'SELECTOR_COLOR_SETTINGS': return COLORS;
+    case 'BODY_TEXTURE_SETTINGS': return ['Set Texture', 'Clear Texture'];
+    case 'SHATTER_TEXTURE_SETTINGS': return [
+      `Status: ${isShatteredScreen ? 'On' : 'Off'}`,
+      'Set Texture', 
+      'Clear Texture'
+    ];
     case 'STICKER_SETTINGS': return ['Slot 1', 'Slot 2', 'Slot 3', 'Slot 4'];
     case 'COVER_FLOW': {
       return Array.from(new Set(userSongs.map(s => s.album))).sort((a, b) => a.localeCompare(b));
